@@ -224,14 +224,7 @@ jobs:
           echo "=========================================="
           echo " MeeChain Production Deployment"
           echo "=========================================="
-          echo "Branch : ${GITHUB_REF_NAME}"
-          echo "Commit : ${GITHUB_SHA}"
-          echo "Chain  : ${NEXT_PUBLIC_CHAIN_ID}"
-          echo "API    : ${NEXT_PUBLIC_API_URL}"
-          echo "RPC    : ${NEXT_PUBLIC_RPC_URL}"
-          echo "Status : DEPLOYED"
-          echo "=========================================="
-
+          
 
   production-verify:
     runs-on: ubuntu-latest
