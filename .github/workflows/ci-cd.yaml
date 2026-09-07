@@ -11,11 +11,8 @@ on:
       - main
       - develop
 
-  # Allows the production-only jobs below to be started from the Actions UI
-  # after selecting the protected main branch.
   workflow_dispatch:
 
-# Prevent multiple CI runs for the same branch/PR from competing.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,31 +27,27 @@ permissions:
 
 jobs:
 
-  # ============================================================
-  # 1. LINT & TYPECHECK
-  # ============================================================
   lint-and-typecheck:
     runs-on: ubuntu-latest
     name: Lint & Type Check
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-       
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.26.1
-             
+        uses: actions/checkout@v4.2.0
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: '22'
-          cache: 'pnpm'
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.26.1 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-       
+
       - name: Run ESLint
         run: pnpm run lint
 
@@ -62,9 +55,6 @@ jobs:
         run: pnpm run typecheck
 
 
-  # ============================================================
-  # 2. BUILD NEXT.JS
-  # ============================================================
   build:
     runs-on: ubuntu-latest
     name: Build Next.js
@@ -72,18 +62,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.26.1
+        uses: actions/checkout@v4.2.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: '22'
-          cache: 'pnpm'
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.26.1 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -105,16 +94,13 @@ jobs:
 
       - name: Upload build artifacts
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: nextjs-build
           path: .next
           retention-days: 7
 
 
-  # ============================================================
-  # 3. SECURITY SCAN
-  # ============================================================
   security:
     runs-on: ubuntu-latest
     name: Security Scan
@@ -122,26 +108,24 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.26.1
+        uses: actions/checkout@v4.2.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: '22'
-          cache: 'pnpm'
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.26.1 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Do not hide pnpm audit failures.
       - name: Run pnpm audit
         run: pnpm audit --audit-level=moderate
 
@@ -156,21 +140,11 @@ jobs:
 
       - name: Upload Trivy results
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v3.27.0
         with:
           sarif_file: trivy-results.sarif
 
 
-  # ============================================================
-  # 4. E2E VERIFICATION
-  # ============================================================
-  #
-  # Intentionally NOT part of the production deployment gate yet. These jobs
-  # remain skipped until Playwright/Cypress configuration and test coverage exist.
-  #
-  # Playwright/Cypress should only become a required gate after
-  # the project has real configuration and test coverage.
-  #
   e2e-playwright:
     runs-on: ubuntu-latest
     name: E2E Tests (Playwright)
@@ -191,9 +165,6 @@ jobs:
       - run: echo "Cypress verification is not configured yet."
 
 
-  # ============================================================
-  # 5. DEPLOY TO VERCEL
-  # ============================================================
   deploy-vercel:
     runs-on: ubuntu-latest
     name: Deploy to Vercel
@@ -208,9 +179,9 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
         with:
-          fetch-depth: 0   # เอา full history เผื่อ Vercel CLI ต้องใช้ git metadata
+          fetch-depth: 0
 
       - name: Verify Vercel secrets are configured
         env:
@@ -234,7 +205,6 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
         run: |
           npx --yes vercel@latest deploy --prod --yes \
             --token "$VERCEL_TOKEN" \
@@ -262,13 +232,7 @@ jobs:
           echo "Status : DEPLOYED"
           echo "=========================================="
 
-  # ============================================================
-  # 6. DEPLOYMENT VERIFICATION
-  # ============================================================
-  #
-  # Lightweight post-deployment verification.
-  # This does not replace the Production Code Hub.
-  #
+
   production-verify:
     runs-on: ubuntu-latest
     name: Production Verification
@@ -317,12 +281,6 @@ jobs:
           echo "RPC chain ID verification passed."
 
 
-  # ============================================================
-  # 7. PLACEHOLDER FOR FUTURE PERFORMANCE VERIFICATION
-  # ============================================================
-  #
-  # Not executed yet.
-  #
   performance:
     runs-on: ubuntu-latest
     name: Performance Verification
@@ -330,3 +288,4 @@ jobs:
 
     steps:
       - run: echo "Performance verification is not configured yet."
+
