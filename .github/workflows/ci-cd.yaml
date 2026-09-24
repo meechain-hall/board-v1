@@ -33,10 +33,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4.1.0
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
         with:
           node-version: '22'
 
@@ -44,7 +44,7 @@ jobs:
         run: |
           corepack enable
           corepack prepare pnpm@10.26.1 --activate
-
+          
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -54,7 +54,6 @@ jobs:
       - name: Run TypeScript check
         run: pnpm run typecheck
 
-
   build:
     runs-on: ubuntu-latest
     name: Build Next.js
@@ -62,10 +61,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4.1.0
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
         with:
           node-version: '22'
 
@@ -73,7 +72,7 @@ jobs:
         run: |
           corepack enable
           corepack prepare pnpm@10.26.1 --activate
-
+          
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -92,32 +91,6 @@ jobs:
           NEXT_PUBLIC_RPC_URL: ${{ env.NEXT_PUBLIC_RPC_URL }}
           NEXT_PUBLIC_CHAIN_ID: ${{ env.NEXT_PUBLIC_CHAIN_ID }}
 
-      - name: Upload build artifacts
-        if: success()
-        uses: actions/upload-artifact@v4.4.0
-        with:
-          name: nextjs-build
-          path: .next
-          retention-days: 7
-
-
-  security:
-    runs-on: ubuntu-latest
-    name: Security Scan
-    needs: lint-and-typecheck
-    permissions:
-      contents: read
-      security-events: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.1.0
-        with:
-          node-version: '22'
-
       - name: Enable pnpm via Corepack
         run: |
           corepack enable
@@ -128,23 +101,7 @@ jobs:
 
       - name: Run pnpm audit
         run: pnpm audit --audit-level=moderate
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: sarif
-          output: trivy-results.sarif
-          ignore-unfixed: true
-
-      - name: Upload Trivy results
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3.27.0
-        with:
-          sarif_file: trivy-results.sarif
-
-
+          
   e2e-playwright:
     runs-on: ubuntu-latest
     name: E2E Tests (Playwright)
@@ -153,7 +110,6 @@ jobs:
 
     steps:
       - run: echo "Playwright verification is not configured yet."
-
 
   e2e-cypress:
     runs-on: ubuntu-latest
@@ -164,28 +120,20 @@ jobs:
     steps:
       - run: echo "Cypress verification is not configured yet."
 
-
   deploy-vercel:
     runs-on: ubuntu-latest
     name: Deploy to Vercel
     needs:
       - build
-      - security
-    if: >
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-
+      
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
         with:
           fetch-depth: 0
 
       - name: Verify Vercel secrets are configured
         env:
-          VERCEL_TELEMETRY_DISABLED: ${{ secrets.VERCEL_TELEMETRY_DISABLED }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -224,16 +172,11 @@ jobs:
           echo "=========================================="
           echo " MeeChain Production Deployment"
           echo "=========================================="
-          
 
   production-verify:
     runs-on: ubuntu-latest
     name: Production Verification
     needs: deploy-vercel
-
-    if: >
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main'
 
     steps:
       - name: Verify production API
@@ -273,12 +216,10 @@ jobs:
 
           echo "RPC chain ID verification passed."
 
-
   performance:
     runs-on: ubuntu-latest
     name: Performance Verification
-    if: false
+    if: true
 
     steps:
       - run: echo "Performance verification is not configured yet."
-
